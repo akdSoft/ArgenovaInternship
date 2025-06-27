@@ -1,19 +1,20 @@
 using Microsoft.EntityFrameworkCore;
-using RaporAsistani.Data;
-using RaporAsistani.Repositories;
 using RaporAsistani.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
-var connectionString = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<AppDbContext>(opt => opt.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 builder.Services.AddHttpClient<LlamaService>(client =>
 {
     client.Timeout = TimeSpan.FromMinutes(5);
 });
-builder.Services.AddScoped<ResponseRepository>();
-builder.Services.AddScoped<ResponseService>();
+
+builder.Services.AddHttpClient<EmbeddingService>(client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(5);
+});
+
+builder.Services.AddScoped<QdrantService>();
+builder.Services.AddScoped<AIService>();
 
 builder.Services.AddCors(options =>
 {
