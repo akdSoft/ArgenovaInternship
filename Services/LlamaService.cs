@@ -67,24 +67,6 @@ public class LlamaService
             };
 
             return response;
-
-            //var responsese = new Response
-            //{
-            //    Id = (string?)json["id"],
-            //    Object = (string?)json["object"],
-            //    Created = (long?)json["created"] ?? 0,
-            //    Model = (string?)json["model"],
-            //    ChoiceText = (string?)json["choices"]?[0]?["text"],
-            //    ChoiceIndex = (int?)json["choices"]?[0]?["index"] ?? 0,
-            //    ChoiceFinishReason = (string?)json["choices"]?[0]?["finish_reason"],
-            //    PromptTokens = (int?)json["usage"]?["prompt_tokens"] ?? 0,
-            //    CompletionTokens = (int?)json["usage"]?["completion_tokens"] ?? 0,
-            //    TotalTokens = (int?)json["usage"]?["total_tokens"] ?? 0,
-            //    Duration = duration,
-            //    Prompt = prompt
-            //};
-
-
         }
         else
         {

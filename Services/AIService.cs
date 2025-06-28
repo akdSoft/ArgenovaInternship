@@ -18,9 +18,16 @@ public class AIService
     public async Task<NewResponse> QueryAsync(string basePrompt)
     {
         var enhancedPrompt = await _qdrantService.GetRelatedPointsAsync(basePrompt: basePrompt);
+        Console.WriteLine("enhanced Prompt:\n" + enhancedPrompt);
         var response = await _llamaService.GetResponseAsync(_basePrompt: basePrompt, _enhancedPrompt: enhancedPrompt);
         await _qdrantService.AddPointAsync(response);
 
         return response;
+    }
+
+    public async Task<List<NewResponse>> GetHistoryAsync()
+    {
+        var responseHistory = await _qdrantService.GetHistoryAsync();
+        return responseHistory;
     }
 }

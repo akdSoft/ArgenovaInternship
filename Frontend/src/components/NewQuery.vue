@@ -17,7 +17,7 @@ async function executeQuery() {
     "prompt": prompt.value
   }
   try {
-     const result = await axios.post("http://localhost:5045/api/Llama", payload)
+     const result = await axios.post("http://localhost:5045/api/AI/query", payload)
     response.value = result.data
   } catch (err) {
     alert(err.message)
@@ -37,28 +37,25 @@ async function executeQuery() {
       <div class="result-container" v-if="response && loading === false">
         <div style="display: flex; flex-direction: row; gap: 20px">
           <p style="font-weight: bold">Soru:</p>
-          <p>{{response.prompt}}</p>
+          <p>{{response.basePrompt}}</p>
         </div>
 
         <div style="display: flex; flex-direction: row; gap: 20px">
           <p style="font-weight: bold">Yanıt:</p>
-          <p>{{response.choiceText}}</p>
+          <p>{{response.responseText}}</p>
         </div>
 
         <div style="display: flex; flex-direction: row; gap: 20px">
           <p style="font-weight: bold">Yanıtlama Süresi:</p>
-          <p>{{response.duration}}</p>
+          <p>{{parseFloat(response.duration.split(':')[2]).toFixed(2)}} saniye</p>
         </div>
 
         <div style="display: flex; flex-direction: row; gap: 20px">
           <p style="font-weight: bold">Tarih:</p>
-          <p>{{new Date(response.created * 1000).toLocaleString()}}</p>
+          <p>{{response.time.replace('T', ' ')}}</p>
 
         </div>
-        <div style="display: flex; flex-direction: row; gap: 20px">
-          <p style="font-weight: bold">Sorgu ID'si:</p>
-          <p>{{response.id}}</p>
-        </div>
+
       </div>
 
 

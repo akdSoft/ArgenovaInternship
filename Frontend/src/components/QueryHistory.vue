@@ -7,7 +7,7 @@ const currentPage = ref('sorgu')
 
 async function loadHistory(){
   try{
-    const response = await axios.get("http://localhost:5045/api/Llama/history")
+    const response = await axios.get("http://localhost:5045/api/AI/history")
     responses.value = response.data
   } catch (err) {
     alert(err.message)
@@ -20,31 +20,25 @@ async function loadHistory(){
     <div class="container">
       <div class="history-element-card" v-for="response in responses">
         <div style="display: flex; flex-direction: row; gap: 20px">
-          <p style="font-weight: bold">Soru:</p>
-          <p>{{response.prompt}}</p>
+          <p style="font-weight: bold">Prompt:</p>
+          <p>{{response.basePrompt}}</p>
         </div>
 
         <div style="display: flex; flex-direction: row; gap: 20px">
           <p style="font-weight: bold">Yanıt:</p>
-          <p>{{response.choiceText}}</p>
+          <p>{{response.responseText}}</p>
         </div>
 
         <div style="display: flex; flex-direction: row; gap: 20px">
           <p style="font-weight: bold">Yanıtlama Süresi:</p>
-          <p>{{response.duration}}</p>
+          <p>{{parseFloat(response.duration.split(':')[2]).toFixed(2)}} saniye</p>
         </div>
 
         <div style="display: flex; flex-direction: row; gap: 20px">
           <p style="font-weight: bold">Tarih:</p>
-          <p>{{new Date(response.created * 1000).toLocaleString()}}</p>
+          <p>{{response.time.replace('T', ' ')}}</p>
 
         </div>
-        <div style="display: flex; flex-direction: row; gap: 20px">
-          <p style="font-weight: bold">Sorgu ID'si:</p>
-          <p>{{response.id}}</p>
-        </div>
-
-
       </div>
     </div>
 
