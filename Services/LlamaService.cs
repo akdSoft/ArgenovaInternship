@@ -18,7 +18,7 @@ public class LlamaService
         _llamaModel = configuration.GetSection("LlamaApi")["LlamaModel"]!;
     }
 
-    public async Task<NewResponse?> GetResponseAsync(string _basePrompt, string _enhancedPrompt)
+    public async Task<(MemoryItem?, MessagePair?)> GetResponseAsync(string _basePrompt, string _enhancedPrompt, long conversationId)
     {
         var url = _baseUrl;
 
@@ -58,19 +58,29 @@ public class LlamaService
                 }
             }
 
-            var response = new NewResponse
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+
+            var memoryItem = new MemoryItem
             {
-                BasePrompt = _basePrompt,
+                Prompt = _basePrompt,
                 ResponseText = string.Join("", responseText),
-                Duration = duration,
-                Time = DateTime.UtcNow
+                Timestamp = long.Parse(timestamp),
+                Duration = duration
             };
 
-            return response;
+            var messagePair = new MessagePair
+            {
+                Prompt = _basePrompt,
+                ConversationId = conversationId,
+                ResponseText = string.Join("", responseText),
+                Timestamp = long.Parse(timestamp)
+            };
+
+            return (memoryItem, messagePair);
         }
         else
         {
-            return null;
+            return (null, null);
         }
     }
 }

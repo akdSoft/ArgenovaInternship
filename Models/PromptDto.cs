@@ -6,5 +6,7 @@ namespace RaporAsistani.Models
     {
         [Required]
         public string Prompt { get; set; } = null!;
+        [Required]
+        public long ConversationId { get; set; }
     }
 }

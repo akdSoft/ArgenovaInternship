@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace RaporAsistani.Models;
+﻿namespace RaporAsistani.Models;
 
 public class LlamaRequest
 {

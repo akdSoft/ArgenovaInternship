@@ -3,7 +3,8 @@
   line-height: 1.5;
   font-weight: 400;
 
-  background-color: #dadada;
+  background: #ededed;
+  background: radial-gradient(circle, rgba(237, 237, 237, 1) 0%, rgba(222, 255, 231, 1) 100%);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -23,6 +24,7 @@ a {
 body {
   margin: 0;
   display: flex;
+  justify-content: center;
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
@@ -56,12 +58,12 @@ button:focus-visible {
   padding: 2em;
 }
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+/*#app {*/
+/*  max-width: 1280px;*/
+/*  margin: 0 auto;*/
+/*  padding: 2rem;*/
+/*  text-align: center;*/
+/*}*/
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -75,3 +77,13 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/*::-webkit-scrollbar{*/
+/*  scrollbar-width: thin;*/
+
+/*}*/
+
+/*::-webkit-scrollbar-thumb {*/
+/*  background: #535bf2;*/
+/*  border-radius: 10px;*/
+/*}*/

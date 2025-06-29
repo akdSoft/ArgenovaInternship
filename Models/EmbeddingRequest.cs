@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
+﻿
 namespace RaporAsistani.Models;
 
 public class EmbeddingRequest

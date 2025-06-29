@@ -1,12 +1,12 @@
 ﻿namespace RaporAsistani.Services;
 
 using System.Globalization;
-using Google.Protobuf.WellKnownTypes;
-using Microsoft.OpenApi.Services;
 using Newtonsoft.Json.Linq;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
+using static Qdrant.Client.Grpc.Conditions;
 using RaporAsistani.Models;
+using System.Drawing;
 
 public class QdrantService
 {
@@ -23,30 +23,181 @@ public class QdrantService
         initialPromptRoot = configuration.GetSection("Prompt")["InitialPromptRoot"]!;
     }
 
-    public async Task CreateCollectionAsync(string collectionName)
+    public async Task CreateCollectionsAsync()
     {
-        await _qdrantClient.CreateCollectionAsync(collectionName: collectionName, vectorsConfig: new VectorParams
+        await _qdrantClient.CreateCollectionAsync(collectionName: "Conversations", vectorsConfig: new VectorParams
+        {
+            Size = 1024,
+            Distance = Distance.Dot
+        });
+
+        await _qdrantClient.CreateCollectionAsync(collectionName: "MessagePairs", vectorsConfig: new VectorParams
+        {
+            Size = 1024,
+            Distance = Distance.Dot
+        });
+
+        await _qdrantClient.CreateCollectionAsync(collectionName: "Memory", vectorsConfig: new VectorParams
         {
             Size = 1024,
             Distance = Distance.Dot
         });
     }
 
-    public async Task AddPointAsync(NewResponse newResponse)
+    public async Task<Conversation> CreateConversationAsync()
     {
-        float[]? vector = await _embeddingService.GetEmbeddingAsync(newResponse.BasePrompt);
+        string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+        float[]? vector = await _embeddingService.GetEmbeddingAsync(timestamp);
 
         var point = new PointStruct
         {
-            Id = new PointId { Num = (ulong)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+            Id = new PointId { Num = ulong.Parse(timestamp) },
             Vectors = vector,
-            Payload = { ["prompt"] = newResponse.BasePrompt, ["responseText"] = newResponse.ResponseText, ["duration"] = newResponse.Duration.ToString(), ["time"] = newResponse.Time.ToString() }
+            Payload = { ["conversationName"] = timestamp, ["timestamp"] = long.Parse(timestamp) }
         };
 
-        await _qdrantClient.UpsertAsync("mainCollection", new List<PointStruct> { point });
+        await _qdrantClient.UpsertAsync("Conversations", new List<PointStruct> { point });
+
+
+
+
+        JObject conversationNameJson = JObject.Parse(point.Payload["conversationName"].ToString());
+        string conversationName = conversationNameJson["stringValue"]?.ToString() ?? string.Empty;
+
+        JObject conversationTimestampJson = JObject.Parse(point.Payload["timestamp"].ToString());
+        string conversationTimestamp = conversationTimestampJson["integerValue"]?.ToString() ?? string.Empty;
+
+        return new Conversation
+        {
+            Id = (long)point.Id.Num,
+            ConversationName = conversationName,
+            Timestamp = long.Parse(conversationTimestamp)
+        };
     }
 
-    public async Task<string?> GetRelatedPointsAsync(string basePrompt)
+    public async Task DeleteConversationAsync(long conversationId)
+    {
+        await _qdrantClient.DeleteAsync(
+            collectionName: "MessagePairs",
+            filter: Match("conversationId", conversationId)
+        );
+
+        await _qdrantClient.DeleteAsync(
+            collectionName: "Conversations",
+            id: (ulong)conversationId
+        );
+    }
+
+    public async Task<List<Conversation>> GetConversationsAsync()
+    {
+        var result = await _qdrantClient.ScrollAsync(
+            collectionName: "Conversations",
+            limit: 10,
+            payloadSelector: true
+        );
+
+        List<Conversation> conversations = new List<Conversation>();
+
+        foreach (var (index, element) in result.Result.Select((element, index) => (index, element)))
+        {
+            JObject conversationNameJson = JObject.Parse(element.Payload["conversationName"].ToString());
+            string conversationName = conversationNameJson["stringValue"]?.ToString() ?? string.Empty;
+
+            JObject conversationTimestampJson = JObject.Parse(element.Payload["timestamp"].ToString());
+            string conversationTimestamp = conversationTimestampJson["integerValue"]?.ToString() ?? string.Empty;
+
+            conversations.Add(new Conversation
+            {
+                Id = (long)element.Id.Num,
+                ConversationName = conversationName,
+                Timestamp = long.Parse(conversationTimestamp)
+            });
+        }
+        return conversations;
+    }
+
+    public async Task<List<MessagePair>> GetMessagePairsAsync(long conversationId)
+    {
+        var result = await _qdrantClient.ScrollAsync(
+            collectionName: "MessagePairs",
+            filter: Match("conversationId", conversationId),
+            limit: 10,
+            payloadSelector: true
+        );
+
+        List<MessagePair> messagePairs = new List<MessagePair>();
+
+        foreach (var (index, element) in result.Result.Select((element, index) => (index, element)))
+        {
+            JObject messagePairConversationIdJson = JObject.Parse(element.Payload["conversationId"].ToString());
+            string messagePairConversationId = messagePairConversationIdJson["integerValue"]?.ToString() ?? string.Empty;
+
+            JObject messagePairPromptJson = JObject.Parse(element.Payload["prompt"].ToString());
+            string messagePairPrompt = messagePairPromptJson["stringValue"]?.ToString() ?? string.Empty;
+
+            JObject messagePairResponseTextJson = JObject.Parse(element.Payload["responseText"].ToString());
+            string messagePairResponseText = messagePairResponseTextJson["stringValue"]?.ToString() ?? string.Empty;
+
+            JObject messagePairTimeJson = JObject.Parse(element.Payload["timestamp"].ToString());
+            string messagePairTime = messagePairTimeJson["integerValue"]?.ToString() ?? string.Empty;
+
+            messagePairs.Add(new MessagePair
+            {
+                Id = (long)element.Id.Num,
+                ConversationId = long.Parse(messagePairConversationId),
+                Prompt = messagePairPrompt,
+                ResponseText = messagePairResponseText,
+                Timestamp = long.Parse(messagePairTime)
+            });
+        }
+        return messagePairs;
+    }
+
+    public async Task DeleteMemoryItem(long memoryItemId)
+    {
+        await _qdrantClient.DeleteAsync(
+            collectionName: "Conversations",
+            id: (ulong)memoryItemId
+        );
+    }
+
+    public async Task<List<MemoryItem>> GetMemoryItemsAsync()
+    {
+        var result = await _qdrantClient.ScrollAsync(
+            collectionName: "Memory",
+            limit: 10,
+            payloadSelector: true
+        );
+
+        List<MemoryItem> memoryItems = new List<MemoryItem>();
+
+        foreach (var (index, element) in result.Result.Select((element, index) => (index, element)))
+        {
+            JObject memoryItemPromptJson = JObject.Parse(element.Payload["prompt"].ToString());
+            string memoryItemPrompt = memoryItemPromptJson["stringValue"]?.ToString() ?? string.Empty;
+
+            JObject memoryItemResponseTextJson = JObject.Parse(element.Payload["responseText"].ToString());
+            string memoryItemResponseText = memoryItemResponseTextJson["stringValue"]?.ToString() ?? string.Empty;
+
+            JObject memoryItemTimestampJson = JObject.Parse(element.Payload["timestamp"].ToString());
+            string memoryItemTimestamp = memoryItemTimestampJson["integerValue"]?.ToString() ?? string.Empty;
+
+            JObject memoryItemDurationJson = JObject.Parse(element.Payload["duration"].ToString());
+            string memoryItemDuration = memoryItemDurationJson["integerValue"]?.ToString() ?? string.Empty;
+
+            memoryItems.Add(new MemoryItem
+            {
+                Id = (long)element.Id.Num,
+                Prompt = memoryItemPrompt,
+                ResponseText = memoryItemResponseText,
+                Timestamp = long.Parse(memoryItemTimestamp),
+                Duration = TimeSpan.FromMilliseconds(long.Parse(memoryItemDuration))
+            });
+        }
+        return memoryItems;
+    }
+
+    public async Task<string?> EnhancePromptWithRelatedPointsAsync(string basePrompt)
     {
         var searchResult = await _qdrantClient.QueryAsync(
             collectionName: "mainCollection",
@@ -64,12 +215,8 @@ public class QdrantService
                 JObject pastPromptJson = JObject.Parse(element.Payload["prompt"].ToString());
                 string pastPrompt = pastPromptJson["stringValue"]?.ToString() ?? string.Empty;
 
-                //JObject pastResponseJson = JObject.Parse(element.Payload["responseText"].ToString());
-                //string pastResponse = pastResponseJson["stringValue"]?.ToString() ?? string.Empty;
-
                 enhancedPrompt += $"Example {index + 1}:\n" +
                     "- Question: \"" + pastPrompt + "\"\n\n";
-                    //"- Answer: \"" + pastResponse + "\"\n\n";
             }
 
             enhancedPrompt += "Now here is a **new fictional weekly schedule** to analyze and compare with the previous ones:\n\n" +
@@ -86,40 +233,34 @@ public class QdrantService
         }
     }
 
-    public async Task<List<NewResponse>> GetHistoryAsync()
+    public async Task UpdateMemoryAndChatAsync(MemoryItem memoryItem, long conversationId)
     {
-        var result = await _qdrantClient.ScrollAsync(
-            collectionName: "mainCollection",
-            limit: 10,
-            payloadSelector: true
-        );
+        string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+        
 
-        List<NewResponse> responseList = new List<NewResponse>();
+        float[]? memoryVector = await _embeddingService.GetEmbeddingAsync(memoryItem.Prompt);
 
-        foreach (var (index, element) in result.Result.Select((element, index) => (index, element)))
+        var memoryPoint = new PointStruct
         {
-            JObject promptJson = JObject.Parse(element.Payload["prompt"].ToString());
-            string prompt = promptJson["stringValue"]?.ToString() ?? string.Empty;
+            Id = new PointId { Num = ulong.Parse(timestamp) },
+            Vectors = memoryVector,
+            Payload = { ["prompt"] = memoryItem.Prompt, ["responseText"] = memoryItem.ResponseText, ["timestamp"] = long.Parse(timestamp), ["duration"] = (long)memoryItem.Duration.TotalMilliseconds }
+        };
 
-            JObject responseTextJson = JObject.Parse(element.Payload["responseText"].ToString());
-            string responseText = responseTextJson["stringValue"]?.ToString() ?? string.Empty;
+        await _qdrantClient.UpsertAsync("Memory", new List<PointStruct> { memoryPoint });
 
-            JObject durationJson = JObject.Parse(element.Payload["duration"].ToString());
-            var duration = (TimeSpan)durationJson["stringValue"]!;
 
-            JObject timeJson = JObject.Parse(element.Payload["time"].ToString());
-            var timeString = timeJson["stringValue"]?.ToString() ?? string.Empty;
-            var time = DateTime.ParseExact(timeString, "dd.MM.yyyy HH:mm:ss", CultureInfo.InvariantCulture);
 
-            responseList.Add(new NewResponse
-            {
-                BasePrompt = prompt,
-                ResponseText = responseText,
-                Duration = duration,
-                Time = time
-            });
-        }
 
-        return responseList;
+        float[]? messagePairVector = await _embeddingService.GetEmbeddingAsync(timestamp);
+
+        var messagePairPoint = new PointStruct
+        {
+            Id = new PointId { Num = ulong.Parse(timestamp) },
+            Vectors = messagePairVector,
+            Payload = { ["conversationId"] = conversationId, ["prompt"] = memoryItem.Prompt, ["responseText"] = memoryItem.ResponseText, ["timestamp"] = long.Parse(timestamp) }
+        };
+
+        await _qdrantClient.UpsertAsync("MessagePairs", new List<PointStruct> { messagePairPoint });
     }
 }

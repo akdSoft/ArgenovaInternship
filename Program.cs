@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using RaporAsistani.Services;
 
 var builder = WebApplication.CreateBuilder(args);
