@@ -1,11 +1,13 @@
 import {createRouter, createWebHistory} from "vue-router";
-import ChatPagePrototype from "../ChatPagePrototype.vue";
+import HomePage from "../HomePage.vue";
+import MemoryPage from "../MemoryPage.vue";
 
 
 const router = createRouter({
     history: createWebHistory(),
     routes: [
-        { path: '/', component: ChatPagePrototype }
+        { path: '/', component: HomePage },
+        { path: '/memory', component: MemoryPage}
     ]
 })
 

@@ -3,8 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  background: #ededed;
-  background: radial-gradient(circle, rgba(237, 237, 237, 1) 0%, rgba(222, 255, 231, 1) 100%);
+  background: #f4f4f4;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -46,9 +45,7 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
-}
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;

@@ -156,7 +156,7 @@ public class QdrantService
     public async Task DeleteMemoryItem(long memoryItemId)
     {
         await _qdrantClient.DeleteAsync(
-            collectionName: "Conversations",
+            collectionName: "Memory",
             id: (ulong)memoryItemId
         );
     }
