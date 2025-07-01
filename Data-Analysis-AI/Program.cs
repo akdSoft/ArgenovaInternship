@@ -4,12 +4,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpClient<LlamaService>(client =>
 {
-    client.Timeout = TimeSpan.FromMinutes(5);
+    client.Timeout = TimeSpan.FromMinutes(100);
 });
 
 builder.Services.AddHttpClient<EmbeddingService>(client =>
 {
-    client.Timeout = TimeSpan.FromMinutes(5);
+    client.Timeout = TimeSpan.FromMinutes(100);
 });
 
 builder.Services.AddScoped<QdrantService>();

@@ -15,7 +15,7 @@ public class AIController : ControllerBase
     [HttpPost("ask-ai")]
     public async Task<IActionResult> AskAiAsync(PromptDto dto)
     {
-        var response = await _aiService.AskAiAsync(dto.Prompt, dto.ConversationId);
+        var response = await _aiService.AskAiAsync(dto.Prompt, dto.ConversationId, dto.AiModel);
         return Ok(response);
     }
 
@@ -65,17 +65,10 @@ public class AIController : ControllerBase
 
 
     //bu kısım program.cs'e taşınacak, koleksiyonlar zaten oluşturulmuşsa tekrarlanmayacak
-    //[HttpPost("create-collections")]
-    //public async Task<IActionResult> CreateCollectionsAsync()
-    //{
-    //    await _aiService.CreateCollectionsAsync();
-    //    return Ok();
-    //}
-
-    //[HttpPost("create-conversation")]
-    //public async Task<IActionResult> CreateConversationAsync()
-    //{
-    //    var conversation = await _aiService.CreateConversationAsync();
-    //    return Ok(conversation);
-    //}
+    [HttpPost("create-collections")]
+    public async Task<IActionResult> CreateCollectionsAsync()
+    {
+        await _aiService.CreateCollectionsAsync();
+        return Ok();
+    }
 }

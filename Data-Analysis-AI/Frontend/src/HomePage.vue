@@ -45,13 +45,14 @@ async function loadConversations(){
 const prompt = ref('')
 
 async function submitPrompt(){
-  if(!selectedConversationId.value){
-    alert('select conversation')
+  if(!selectedConversationId.value || !aimodel.value || !prompt.value){
+    alert('Make sure to: select model, select conversation, enter prompt')
     return
   }
   const payload = {
     prompt: prompt.value,
-    conversationId: selectedConversationId.value
+    conversationId: selectedConversationId.value,
+    aiModel: aimodel.value
   }
   try{
     const response = await axios.post("http://localhost:5045/api/AI/ask-ai", payload)
@@ -80,10 +81,18 @@ async function createConversation(){
   }
 }
 
+const aimodel = ref('')
+
+function cleanedResponse(response) {
+  const raw = response || '';
+  return raw.replace(/<think>.*?<\/think>/gs, '');
+}
+
 onMounted(async () => {
   await loadConversations();
   await loadMessagePairs();
 })
+
 </script>
 
 <template>
@@ -138,7 +147,7 @@ onMounted(async () => {
 
             <div class="AiResponseBlockContainer">
               <div class="AiResponseBlock">
-                <a>{{messagePair.responseText}}</a>
+                <a style="line-break: unset">{{ cleanedResponse(messagePair.responseText) }}</a>
               </div>
             </div>
           </div>
@@ -156,17 +165,34 @@ onMounted(async () => {
               <p class="caption-2">Lütfen sohbet oluşturun veya seçin.</p>
             </div>
           </div>
-
         </div>
+        <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items: center">
+          <div v-if="selectedConversationId" class="model-wrapper">
+            <div class="model-container">
+              <label for="models">Model:</label>
+              <select name="models" id="models" v-model="aimodel">
+                <option value="llama3.1:8b">Llama 3.1 (8b)</option>
+                <option value="deepseek-r1:14b">Deepseek r1 (14b)</option>
+                <option value="qwen3:14b">Qwen 3 (14b)</option>
+                <option value="gemma3:12b">Gemma 3 (12b)</option>
+              </select>
+            </div>
+          </div>
 
-        <div v-if="selectedConversationId" class="input-container">
-          <textarea v-model="prompt" class="textarea" @input="resizeTextField" placeholder="Çalışma sürelerini analiz eden yapay zeka botuna sorun..."></textarea>
-          <div class="submitButton-container">
-            <button class="submitButton" @click="submitPrompt">
-              <img class="submitButton-img" src="../src/assets/submit.png">
-            </button>
+          <div v-if="selectedConversationId" class="input-container">
+            <textarea v-model="prompt" class="textarea" @input="resizeTextField" placeholder="Çalışma sürelerini analiz eden yapay zeka botuna sorun..."></textarea>
+            <div class="submitButton-container">
+              <button class="submitButton" @click="submitPrompt">
+                <img class="submitButton-img" src="../src/assets/submit.png">
+              </button>
+            </div>
+          </div>
+
+          <div v-if="selectedConversationId" class="model-wrapper">
+            <a style="visibility: hidden">placeholder</a>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -464,7 +490,7 @@ onMounted(async () => {
   flex: 2;
   height: fit-content;
   max-height: fit-content;
-  width: 60%;
+  max-width: 60%;
   background: #f3f3f3;  /* fallback for old browsers */
   border-radius: 30px;
   padding-top: 10px;
@@ -474,7 +500,31 @@ onMounted(async () => {
   flex-direction: row;
   justify-content: center;
   align-items: center;
+}
 
+.model-wrapper {
+  width: 100px;
+  padding-left: 110px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.model-container{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background-color: #f2f2f2;
+  padding: 6px;
+  border-radius: 12px;
+  font-size: 20px;
+}
+
+.model-container select {
+  font-size: 17px;
+  border-radius: 10px;
 }
 
 .textarea {

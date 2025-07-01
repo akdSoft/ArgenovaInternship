@@ -18,13 +18,13 @@ public class LlamaService
         _llamaModel = configuration.GetSection("LlamaApi")["LlamaModel"]!;
     }
 
-    public async Task<(MemoryItem?, MessagePair?)> GetResponseAsync(string _basePrompt, string _enhancedPrompt, long conversationId)
+    public async Task<(MemoryItem?, MessagePair?)> GetResponseAsync(string _basePrompt, string _enhancedPrompt, long conversationId, string aimodel)
     {
         var url = _baseUrl;
-
         var json = JsonSerializer.Serialize(new LlamaRequest
         {
-            Model = _llamaModel,
+            //Model = _llamaModel,
+            Model = aimodel,
             Prompt = _enhancedPrompt
         });
 

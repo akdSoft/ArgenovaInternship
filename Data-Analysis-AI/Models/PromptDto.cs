@@ -8,5 +8,7 @@ namespace RaporAsistani.Models
         public string Prompt { get; set; } = null!;
         [Required]
         public long ConversationId { get; set; }
+        [Required]
+        public string AiModel { get; set; } = null!;
     }
 }

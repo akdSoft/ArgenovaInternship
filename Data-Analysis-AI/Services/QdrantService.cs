@@ -1,12 +1,10 @@
 ﻿namespace RaporAsistani.Services;
 
-using System.Globalization;
 using Newtonsoft.Json.Linq;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
 using static Qdrant.Client.Grpc.Conditions;
 using RaporAsistani.Models;
-using System.Drawing;
 
 public class QdrantService
 {
@@ -92,7 +90,7 @@ public class QdrantService
     {
         var result = await _qdrantClient.ScrollAsync(
             collectionName: "Conversations",
-            limit: 10,
+            limit: 30,
             payloadSelector: true
         );
 
@@ -121,7 +119,7 @@ public class QdrantService
         var result = await _qdrantClient.ScrollAsync(
             collectionName: "MessagePairs",
             filter: Match("conversationId", conversationId),
-            limit: 10,
+            limit: 30,
             payloadSelector: true
         );
 
@@ -165,7 +163,7 @@ public class QdrantService
     {
         var result = await _qdrantClient.ScrollAsync(
             collectionName: "Memory",
-            limit: 10,
+            limit: 30,
             payloadSelector: true
         );
 
@@ -200,7 +198,7 @@ public class QdrantService
     public async Task<string?> EnhancePromptWithRelatedPointsAsync(string basePrompt)
     {
         var searchResult = await _qdrantClient.QueryAsync(
-            collectionName: "mainCollection",
+            collectionName: "Memory",
             query: await _embeddingService.GetEmbeddingAsync(basePrompt),
             limit: 3
         );
@@ -208,27 +206,34 @@ public class QdrantService
         if(searchResult.Count > 0)
         {
             string enhancedPrompt = promptRoot +
-                "Here are some previous weekly schedules:\n\n";
+                "İşte önceki bazı haftalık çalışma programları:\n\n";
 
             foreach (var (index, element) in searchResult.Select((element, index) => (index, element)))
             {
                 JObject pastPromptJson = JObject.Parse(element.Payload["prompt"].ToString());
                 string pastPrompt = pastPromptJson["stringValue"]?.ToString() ?? string.Empty;
 
-                enhancedPrompt += $"Example {index + 1}:\n" +
-                    "- Question: \"" + pastPrompt + "\"\n\n";
+                //her pastPrompt  'Pazartesi: 09:00-17:00 ..... Cuma: 09:00-17:00 (Haftanın Tarihi: 1 Ocak-7 Ocak)' formatındadır
+                //LLM'e hafıza sağlarken sondaki tarihi ifade eden parantezli kısmı başlık olarak kullanıyoruz => pastPromptTitle
+
+                int start = pastPrompt.LastIndexOf('(') + 1;
+                int length = pastPrompt.LastIndexOf(')') - start;
+                string pastPromptTitle = pastPrompt.Substring(start, length);
+
+                enhancedPrompt += $"Geçmiş {pastPromptTitle}:\n" +
+                    "- Haftalık Mesai Saatleri: \"" + pastPrompt + "\"\n\n";
             }
 
-            enhancedPrompt += "Now here is a **new fictional weekly schedule** to analyze and compare with the previous ones:\n\n" +
+            enhancedPrompt += "Şimdi ise analiz etmen ve önceki programlarla karşılaştırman için yeni bir kurgusal haftalık çalışma programı:\n\n" +
                 basePrompt + "\n\n" +
-                "Please evaluate this new schedule, compare it with previous ones where applicable, and give your full assessment.";
+                "Lütfen bu yeni programı değerlendir, uygun olan yerlerde önceki programlarla karşılaştır ve kapsamlı bir genel değerlendirme sun.";
 
             return enhancedPrompt;
         }
         else
         {
             return initialPromptRoot +
-                "\nNow here is a **new fictional weekly schedule** to analyze:\n" +
+                "\nŞimdi analiz etmen için yeni bir kurgusal haftalık çalışma programı:\n" +
                 basePrompt + "\n\n";
         }
     }

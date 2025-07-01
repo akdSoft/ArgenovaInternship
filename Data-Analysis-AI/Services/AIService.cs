@@ -27,13 +27,13 @@ public class AIService
 
     public async Task<List<MemoryItem>> GetMemoryItemsAsync() => await _qdrantService.GetMemoryItemsAsync();
 
-    public async Task<MessagePair?> AskAiAsync(string basePrompt, long conversationId)
+    public async Task<MessagePair?> AskAiAsync(string basePrompt, long conversationId, string aimodel)
     {
         var enhancedPrompt = await _qdrantService.EnhancePromptWithRelatedPointsAsync(basePrompt: basePrompt);
 
         Console.WriteLine("enhanced Prompt:\n" + enhancedPrompt);
 
-        var (memoryItem, messagePair) = await _llamaService.GetResponseAsync(basePrompt, enhancedPrompt, conversationId);
+        var (memoryItem, messagePair) = await _llamaService.GetResponseAsync(basePrompt, enhancedPrompt, conversationId, aimodel);
 
         await _qdrantService.UpdateMemoryAndChatAsync(memoryItem, conversationId);
 
