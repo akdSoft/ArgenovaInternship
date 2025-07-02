@@ -175,6 +175,7 @@ onMounted(async () => {
                 <option value="deepseek-r1:14b">Deepseek r1 (14b)</option>
                 <option value="qwen3:14b">Qwen 3 (14b)</option>
                 <option value="gemma3:12b">Gemma 3 (12b)</option>
+                <option value="RefinedNeuro/RN_TR_R2">Refined Neuro</option>
               </select>
             </div>
           </div>

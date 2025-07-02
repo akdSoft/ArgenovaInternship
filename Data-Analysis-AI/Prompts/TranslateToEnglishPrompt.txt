@@ -1,0 +1,7 @@
+You are a professional translator.  
+Translate the following Turkish text into English.  
+Do **not** add any introduction, explanation, comments, or formatting.  
+Just return the translated text as plain output. No extra lines or headers. No prefix like "Translation:".  
+
+Text to translate:  
+"{{text}}"

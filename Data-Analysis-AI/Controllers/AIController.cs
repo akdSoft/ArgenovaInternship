@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using OfficeOpenXml;
+using RaporAsistani.Helpers;
 using RaporAsistani.Models;
 using RaporAsistani.Services;
 
@@ -62,13 +65,21 @@ public class AIController : ControllerBase
     }
 
 
+    [HttpPost("upload-file")]
+    public async Task<IActionResult> UploadFileAsync(List<IFormFile> excelFile)
+    {
+        var result = await _aiService.UploadFilesAsync(excelFile);
+        return (result == true) ? Ok(InMemoryStorage.SpreadsheetsToString) : BadRequest();
+    }
+
+
 
 
     //bu kısım program.cs'e taşınacak, koleksiyonlar zaten oluşturulmuşsa tekrarlanmayacak
-    [HttpPost("create-collections")]
-    public async Task<IActionResult> CreateCollectionsAsync()
-    {
-        await _aiService.CreateCollectionsAsync();
-        return Ok();
-    }
+    //[HttpPost("create-collections")]
+    //public async Task<IActionResult> CreateCollectionsAsync()
+    //{
+    //    await _aiService.CreateCollectionsAsync();
+    //    return Ok();
+    //}
 }

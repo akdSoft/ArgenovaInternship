@@ -5,6 +5,7 @@ using Qdrant.Client;
 using Qdrant.Client.Grpc;
 using static Qdrant.Client.Grpc.Conditions;
 using RaporAsistani.Models;
+using System.Xml.Linq;
 
 public class QdrantService
 {
@@ -13,12 +14,13 @@ public class QdrantService
     private readonly string promptRoot;
     private readonly string initialPromptRoot;
 
-    public QdrantService(EmbeddingService embeddingService, IConfiguration configuration)
+
+    public QdrantService(EmbeddingService embeddingService, PromptService promptService)
     {
         _qdrantClient = new QdrantClient("localhost", 6334);
         _embeddingService = embeddingService;
-        promptRoot = configuration.GetSection("Prompt")["PromptRoot"]!;
-        initialPromptRoot = configuration.GetSection("Prompt")["InitialPromptRoot"]!;
+        promptRoot = promptService.GetDefaultPromptRoot();
+        initialPromptRoot = promptService.GetInitialPromptRoot();
     }
 
     public async Task CreateCollectionsAsync()
@@ -195,61 +197,59 @@ public class QdrantService
         return memoryItems;
     }
 
-    public async Task<string?> EnhancePromptWithRelatedPointsAsync(string basePrompt)
+    public async Task<string?> EnhancePromptWithRelatedPointsAsync(string englishBasePrompt, string weekSummary, string tables)
     {
+        Console.WriteLine("weeksummary: " + weekSummary);
+        var embeddingResult = await _embeddingService.GetEmbeddingAsync(weekSummary);
+
         var searchResult = await _qdrantClient.QueryAsync(
             collectionName: "Memory",
-            query: await _embeddingService.GetEmbeddingAsync(basePrompt),
-            limit: 3
+            query: embeddingResult,
+            limit: 1
         );
 
         if(searchResult.Count > 0)
         {
-            string enhancedPrompt = promptRoot +
-                "İşte önceki bazı haftalık çalışma programları:\n\n";
+            string enhancedPrompt = promptRoot;
 
-            foreach (var (index, element) in searchResult.Select((element, index) => (index, element)))
-            {
-                JObject pastPromptJson = JObject.Parse(element.Payload["prompt"].ToString());
-                string pastPrompt = pastPromptJson["stringValue"]?.ToString() ?? string.Empty;
+            JObject relatedWeekSummaryJson = JObject.Parse(searchResult.ElementAt(0).Payload["weekSummary"].ToString());
+            string relatedWeekSummary = relatedWeekSummaryJson["stringValue"]?.ToString() ?? string.Empty;
 
-                //her pastPrompt  'Pazartesi: 09:00-17:00 ..... Cuma: 09:00-17:00 (Haftanın Tarihi: 1 Ocak-7 Ocak)' formatındadır
-                //LLM'e hafıza sağlarken sondaki tarihi ifade eden parantezli kısmı başlık olarak kullanıyoruz => pastPromptTitle
-
-                int start = pastPrompt.LastIndexOf('(') + 1;
-                int length = pastPrompt.LastIndexOf(')') - start;
-                string pastPromptTitle = pastPrompt.Substring(start, length);
-
-                enhancedPrompt += $"Geçmiş {pastPromptTitle}:\n" +
-                    "- Haftalık Mesai Saatleri: \"" + pastPrompt + "\"\n\n";
-            }
-
-            enhancedPrompt += "Şimdi ise analiz etmen ve önceki programlarla karşılaştırman için yeni bir kurgusal haftalık çalışma programı:\n\n" +
-                basePrompt + "\n\n" +
-                "Lütfen bu yeni programı değerlendir, uygun olan yerlerde önceki programlarla karşılaştır ve kapsamlı bir genel değerlendirme sun.";
+            enhancedPrompt = enhancedPrompt.Replace("{{pastweekdate}}", "26.05.2025–01.06.2025");
+            enhancedPrompt = enhancedPrompt.Replace("{{pastweeksummary}}", relatedWeekSummary);
+            enhancedPrompt = enhancedPrompt.Replace("{{tables}}", tables);
+            enhancedPrompt = enhancedPrompt.Replace("{{baseprompt}}", englishBasePrompt);
 
             return enhancedPrompt;
         }
         else
         {
-            return initialPromptRoot +
-                "\nŞimdi analiz etmen için yeni bir kurgusal haftalık çalışma programı:\n" +
-                basePrompt + "\n\n";
+            string enhancedPrompt = initialPromptRoot;
+            enhancedPrompt = enhancedPrompt.Replace("{{tables}}", tables);
+            enhancedPrompt = enhancedPrompt.Replace("{{baseprompt}}", englishBasePrompt);
+
+            return enhancedPrompt;
         }
     }
 
     public async Task UpdateMemoryAndChatAsync(MemoryItem memoryItem, long conversationId)
     {
         string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-        
 
-        float[]? memoryVector = await _embeddingService.GetEmbeddingAsync(memoryItem.Prompt);
+        float[]? memoryVector = await _embeddingService.GetEmbeddingAsync(memoryItem.WeekSummary);
+
+        Console.WriteLine("prompt: " + memoryItem.Prompt);
+        Console.WriteLine("responseText: " + memoryItem.ResponseText);
+        Console.WriteLine("duration: " + (long)memoryItem.Duration.TotalMilliseconds);
+        Console.WriteLine("weekSummary: " + memoryItem.WeekSummary);
+        Console.WriteLine("timestamp: " + long.Parse(timestamp));
+
 
         var memoryPoint = new PointStruct
         {
             Id = new PointId { Num = ulong.Parse(timestamp) },
             Vectors = memoryVector,
-            Payload = { ["prompt"] = memoryItem.Prompt, ["responseText"] = memoryItem.ResponseText, ["timestamp"] = long.Parse(timestamp), ["duration"] = (long)memoryItem.Duration.TotalMilliseconds }
+            Payload = { ["prompt"] = memoryItem.Prompt, ["responseText"] = memoryItem.ResponseText, ["timestamp"] = long.Parse(timestamp), ["duration"] = (long)memoryItem.Duration.TotalMilliseconds, ["weekSummary"] = memoryItem.WeekSummary }
         };
 
         await _qdrantClient.UpsertAsync("Memory", new List<PointStruct> { memoryPoint });

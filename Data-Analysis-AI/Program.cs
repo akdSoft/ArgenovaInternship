@@ -1,6 +1,9 @@
+using OfficeOpenXml;
 using RaporAsistani.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+ExcelPackage.License.SetNonCommercialOrganization("none");
 
 builder.Services.AddHttpClient<LlamaService>(client =>
 {
@@ -14,6 +17,8 @@ builder.Services.AddHttpClient<EmbeddingService>(client =>
 
 builder.Services.AddScoped<QdrantService>();
 builder.Services.AddScoped<AIService>();
+
+builder.Services.AddSingleton<PromptService>();
 
 builder.Services.AddCors(options =>
 {
