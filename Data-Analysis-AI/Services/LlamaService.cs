@@ -26,6 +26,7 @@ public class LlamaService
     public async Task<string?> GetWeekSummaryAsync(string tables)
     {
         var prompt = _getWeekSummaryPrompt.Replace("{{tables}}", tables);
+        Console.WriteLine("Sorgu 1 ile giden prompt: (GetWeekSummary)\n" + prompt);
 
         var url = _baseUrl;
         var json = JsonSerializer.Serialize(new LlamaRequest
@@ -57,6 +58,7 @@ public class LlamaService
                 }
             }
 
+            Console.WriteLine("Sorgu 1 sonucu:\n" + string.Join("", responseText));
             return string.Join("", responseText);
         }
         else
@@ -76,6 +78,7 @@ public class LlamaService
         });
 
         var request = new StringContent(json, Encoding.UTF8/*, "application/json"*/);
+        Console.WriteLine("Sorgu 3 ile gönderilen prompt: (Ana sorgu)\n" + _enhancedPrompt);
 
         var httpResponseMessage = await _httpClient.PostAsync(url, request);
 
@@ -107,7 +110,7 @@ public class LlamaService
 
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
 
-
+            Console.WriteLine("Sorgu 3 sonucu:\n" + string.Join("", responseText));
             var turkishResponseText = await TranslateToTurkishAsync(string.Join("", responseText));
 
             var memoryItem = new MemoryItem
@@ -138,11 +141,13 @@ public class LlamaService
     public async Task<string?> TranslateToEnglishAsync(string prompt)
     {
         var enhancedPrompt = _translateToEnglishPrompt.Replace("{{text}}", prompt);
+        Console.WriteLine("Sorgu 2 ile gönderilen prompt: (Base prompt -> İngilizce)\n" + enhancedPrompt);
 
         var url = _baseUrl;
         var json = JsonSerializer.Serialize(new LlamaRequest
         {
             Model = "llama3.1:8b",
+            //Model = "gemma3:12b",
             Prompt = enhancedPrompt
         });
 
@@ -169,6 +174,7 @@ public class LlamaService
                 }
             }
 
+            Console.WriteLine("Sorgu 2 sonucu:\n" + string.Join("", responseText));
             return string.Join("", responseText);
         }
         else
@@ -180,11 +186,13 @@ public class LlamaService
     public async Task<string?> TranslateToTurkishAsync(string prompt)
     {
         var enhancedPrompt = _translateToTurkishPrompt.Replace("{{text}}", prompt);
+        Console.WriteLine("Sorgu 4 ile gönderilen prompt: (ResponseText -> Türkçe)\n" + enhancedPrompt);
 
         var url = _baseUrl;
         var json = JsonSerializer.Serialize(new LlamaRequest
         {
             Model = "llama3.1:8b",
+            //Model = "gemma3:12b",
             Prompt = enhancedPrompt
         });
 
@@ -194,7 +202,6 @@ public class LlamaService
         if (httpResponseMessage.IsSuccessStatusCode)
         {
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
-            Console.WriteLine("content: " + content);
 
             var lines = content.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -212,11 +219,11 @@ public class LlamaService
                 }
             }
 
+            Console.WriteLine("Sorgu 4 sonucu:\n" + string.Join("", responseText));
             return string.Join("", responseText);
         }
         else
         {
-            Console.WriteLine("error: " + await httpResponseMessage.Content.ReadAsStringAsync());
             return null;
         }
     }

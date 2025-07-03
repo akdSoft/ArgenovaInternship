@@ -45,14 +45,14 @@ async function loadConversations(){
 const prompt = ref('')
 
 async function submitPrompt(){
-  if(!selectedConversationId.value || !aimodel.value || !prompt.value){
+  if(!selectedConversationId.value/* || !aimodel.value */|| !prompt.value){
     alert('Make sure to: select model, select conversation, enter prompt')
     return
   }
   const payload = {
     prompt: prompt.value,
     conversationId: selectedConversationId.value,
-    aiModel: aimodel.value
+    aiModel: 'llama3.1:8b'
   }
   try{
     const response = await axios.post("http://localhost:5045/api/AI/ask-ai", payload)
@@ -61,6 +61,43 @@ async function submitPrompt(){
   } catch (err) {
     alert(err.message)
   }
+}
+
+const fileInput = ref(null)
+const uploadedFiles = ref([])
+
+function triggerFileUpload() {
+  fileInput.value.click()
+}
+
+async function uploadFiles(event) {
+  const selectedFiles = Array.from(event.target.files)
+  uploadedFiles.value = selectedFiles
+
+  if (!selectedFiles || selectedFiles.length === 0) {
+    console.warn("Dosya seçilmedi.")
+    return
+  }
+
+  if(selectedFiles.length === 0){
+    return
+  }
+
+  const formData = new FormData()
+  selectedFiles.forEach(file => {
+    formData.append("excelFile", file)
+  })
+
+  try {
+    const response = await axios.post('http://localhost:5045/api/AI/upload-file', formData, {
+      headers: { 'Content-Type':'multipart/form-data' }
+    })
+    console.log(response.data)
+    alert("Files have been uploaded")
+  } catch (err) {
+    alert(err.message)
+  }
+
 }
 
 async function deleteConversation(conversationId){
@@ -120,7 +157,7 @@ onMounted(async () => {
           </button>
         </div>
 
-        <hr style="width: 80%; border-top: transparent; border-right: transparent; border-left: transparent; border-bottom:2px dotted lightgray ">
+        <hr style="width: 80%; border-top: transparent; border-right: transparent; border-left: transparent; border-bottom:2px lightgray groove ">
 
         <div class="conversations-container"  v-for="conversation in conversations" @click="selectedConversationId = conversation.id; loadMessagePairs()">
           <button class="conversationButton-unselected">
@@ -175,17 +212,31 @@ onMounted(async () => {
                 <option value="deepseek-r1:14b">Deepseek r1 (14b)</option>
                 <option value="qwen3:14b">Qwen 3 (14b)</option>
                 <option value="gemma3:12b">Gemma 3 (12b)</option>
-                <option value="RefinedNeuro/RN_TR_R2">Refined Neuro</option>
               </select>
             </div>
           </div>
 
-          <div v-if="selectedConversationId" class="input-container">
-            <textarea v-model="prompt" class="textarea" @input="resizeTextField" placeholder="Çalışma sürelerini analiz eden yapay zeka botuna sorun..."></textarea>
-            <div class="submitButton-container">
-              <button class="submitButton" @click="submitPrompt">
-                <img class="submitButton-img" src="../src/assets/submit.png">
-              </button>
+          <div class="input-wrapper">
+            <ul v-if="selectedConversationId" class="uploadedFiles" >
+              <li v-for="file in uploadedFiles">{{file.name}}</li>
+            </ul>
+            <div v-if="selectedConversationId" class="input-container" >
+
+                <div class="attachButton-container">
+                  <input type="file" ref="fileInput" @change="uploadFiles" multiple style="display: none" />
+
+                  <button class="attachButton" @click="triggerFileUpload">
+                    <img class="attachButton-img" src="../src/assets/attach.png">
+                  </button>
+                </div>
+
+              <textarea v-model="prompt" class="textarea" @input="resizeTextField" placeholder="Çalışma sürelerini analiz eden yapay zeka botuna sorun..."></textarea>
+
+              <div class="submitButton-container">
+                <button class="submitButton" @click="submitPrompt">
+                  <img class="submitButton-img" src="../src/assets/submit.png">
+                </button>
+              </div>
             </div>
           </div>
 
@@ -293,7 +344,7 @@ onMounted(async () => {
   align-items: center;
   border-radius: 0px;
   gap: 10px;
-  color: black;
+  color: white;
   background-color: transparent;
   pointer-events: none;
   .HomeButton-img {
@@ -316,7 +367,7 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  color: black;
+  color: white;
   background-color: transparent;
   pointer-events: none;
 
@@ -349,7 +400,7 @@ onMounted(async () => {
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    color: black;
+    color: white;
     background-color: transparent;
   }
   .newConversationButton-img {
@@ -398,8 +449,8 @@ onMounted(async () => {
   width: 80%;
   height: 50px;
   border-radius: 15px;
-  background-color: rgba(39, 207, 188, 0.27);
-  color: dimgray;
+  background: transparent;
+  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -487,20 +538,45 @@ onMounted(async () => {
   color: dimgray;
 }
 
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 1000px;
+}
+
 .input-container {
   flex: 2;
   height: fit-content;
   max-height: fit-content;
-  max-width: 60%;
-  background: #f3f3f3;  /* fallback for old browsers */
+  max-width: 90%;
+  background: #24252d;
   border-radius: 30px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  gap: 100px;
+  padding: 10px;
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
+}
+
+.uploadedFiles {
+  width: 85%;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  margin: 0px;
+  margin-bottom: 5px;
+  padding: 0;
+
+}
+
+.uploadedFiles li {
+  border: black thin dashed;
+  list-style-type: none;
+  padding-right: 10px;
+  padding-left: 10px;
 }
 
 .model-wrapper {
@@ -517,7 +593,8 @@ onMounted(async () => {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  background-color: #f2f2f2;
+  background: #24252d;
+  color: white;
   padding: 6px;
   border-radius: 12px;
   font-size: 20px;
@@ -525,18 +602,27 @@ onMounted(async () => {
 
 .model-container select {
   font-size: 17px;
-  border-radius: 10px;
+  color: white;
+  background: transparent;
+  border-color: transparent;
+}
+
+.model-container select option{
+  font-size: 17px;
+  color: white;
+  background: #24252d;
+  border: none;
 }
 
 .textarea {
   resize: none;
-  color: dimgray;
+  color: white;
   background-color: transparent;
   border-color: transparent;
   outline: none;
   font-size: 17px;
   height: 25px;
-  width: 80%;
+  width: 900px;
   padding-left: 20px;
   padding-top: 10px;
 }
@@ -555,6 +641,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: row;
   justify-content: center;
+  align-items: center;
   .submitButton {
     display: flex;
     justify-content: center;
@@ -566,6 +653,25 @@ onMounted(async () => {
   .submitButton-img {
     height: 40px;
     width: 40px;
+  }
+}
+
+.attachButton-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  .attachButton {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    width: 40px;
+    background-color: transparent;
+  }
+  .attachButton-img {
+    height: 35px;
+    width: 35px;
   }
 }
 

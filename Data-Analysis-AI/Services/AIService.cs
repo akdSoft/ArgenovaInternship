@@ -68,20 +68,15 @@ public class AIService
         return true;
     }
 
-    public async Task<string?> GetWeekSummaryAsync(string tables) => await _llamaService.GetWeekSummaryAsync(tables);
-
-    
     public async Task<MessagePair?> AskAiAsync(string basePrompt, long conversationId, string aimodel)
     {
         var tablesString = InMemoryStorage.SpreadsheetsToString;
 
+        string weekSummary = await _llamaService.GetWeekSummaryAsync(tablesString);
+
         string englishBasePrompt = await _llamaService.TranslateToEnglishAsync(basePrompt);
 
-        string weekSummary = await GetWeekSummaryAsync(tablesString);
-
         var enhancedPrompt = await _qdrantService.EnhancePromptWithRelatedPointsAsync(englishBasePrompt, weekSummary, tablesString);
-
-        Console.WriteLine("enhanced Prompt:\n" + enhancedPrompt);
 
         var (memoryItem, messagePair) = await _llamaService.GetResponseAsync(basePrompt, enhancedPrompt, conversationId, aimodel, weekSummary);
 

@@ -73,8 +73,6 @@ public class AIController : ControllerBase
     }
 
 
-
-
     //bu kısım program.cs'e taşınacak, koleksiyonlar zaten oluşturulmuşsa tekrarlanmayacak
     //[HttpPost("create-collections")]
     //public async Task<IActionResult> CreateCollectionsAsync()

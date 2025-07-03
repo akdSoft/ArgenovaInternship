@@ -199,7 +199,6 @@ public class QdrantService
 
     public async Task<string?> EnhancePromptWithRelatedPointsAsync(string englishBasePrompt, string weekSummary, string tables)
     {
-        Console.WriteLine("weeksummary: " + weekSummary);
         var embeddingResult = await _embeddingService.GetEmbeddingAsync(weekSummary);
 
         var searchResult = await _qdrantClient.QueryAsync(
@@ -237,12 +236,6 @@ public class QdrantService
         string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
 
         float[]? memoryVector = await _embeddingService.GetEmbeddingAsync(memoryItem.WeekSummary);
-
-        Console.WriteLine("prompt: " + memoryItem.Prompt);
-        Console.WriteLine("responseText: " + memoryItem.ResponseText);
-        Console.WriteLine("duration: " + (long)memoryItem.Duration.TotalMilliseconds);
-        Console.WriteLine("weekSummary: " + memoryItem.WeekSummary);
-        Console.WriteLine("timestamp: " + long.Parse(timestamp));
 
 
         var memoryPoint = new PointStruct
