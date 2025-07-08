@@ -1,7 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using OfficeOpenXml;
-using RaporAsistani.Helpers;
 using RaporAsistani.Models;
 using RaporAsistani.Services;
 
@@ -12,13 +9,27 @@ namespace RaporAsistani.Controllers;
 public class AIController : ControllerBase
 {
     private readonly AIService _aiService;
+    private readonly PythonService _pythonService;
+    private readonly PromptService _promptService;
 
-    public AIController(AIService aiService) => _aiService = aiService;
-
-    [HttpPost("ask-ai")]
-    public async Task<IActionResult> AskAiAsync(PromptDto dto)
+    public AIController(AIService aiService, PythonService pythonService, PromptService promptService)
     {
-        var response = await _aiService.AskAiAsync(dto.Prompt, dto.ConversationId, dto.AiModel);
+        _aiService = aiService;
+        _pythonService = pythonService;
+        _promptService = promptService;
+    }
+
+    [HttpPost("add-new-day")]
+    public async Task<IActionResult> AddNewDayAsync(IFormFile excelFile)
+    {
+        var result = await _aiService.AddNewDayAsync(excelFile);
+        return (result != null) ? Ok(result) : BadRequest();
+    }
+
+    [HttpPost("ask-ai-new")]
+    public async Task<IActionResult> AskAINewAsync(QueryDto dto)
+    {
+        var response = await _aiService.AskAINewAsync(dto);
         return Ok(response);
     }
 
@@ -30,7 +41,7 @@ public class AIController : ControllerBase
     }
 
     [HttpDelete("delete-conversation/{conversationId}")]
-    public async Task<IActionResult> DeleteConversationAsync(long conversationId)
+    public async Task<IActionResult> DeleteConversationAsync(string conversationId)
     {
         await _aiService.DeleteConversation(conversationId);
         return NoContent();
@@ -44,7 +55,7 @@ public class AIController : ControllerBase
     }
 
     [HttpGet("get-messagepairs/{conversationId}")]
-    public async Task<IActionResult> GetMessagePairsAsync(long conversationId)
+    public async Task<IActionResult> GetMessagePairsAsync(string conversationId)
     {
         var messagePairs = await _aiService.GetMessagePairsAsync(conversationId);
         return Ok(messagePairs);
@@ -57,27 +68,10 @@ public class AIController : ControllerBase
         return Ok(memoryItems);
     }
 
-    [HttpDelete("delete-memoryitems/{id}")]
-    public async Task<IActionResult> DeleteMemoryItemAsync(long id)
+    [HttpGet("first-and-last-day")]
+    public async Task<IActionResult> GetFirstAndLastDate()
     {
-        await _aiService.DeleteMemoryItemAsync(id);
-        return NoContent();
+        var response = await _pythonService.GetFirstAndLastDate();
+        return Ok(response);
     }
-
-
-    [HttpPost("upload-file")]
-    public async Task<IActionResult> UploadFileAsync(List<IFormFile> excelFile)
-    {
-        var result = await _aiService.UploadFilesAsync(excelFile);
-        return (result == true) ? Ok(InMemoryStorage.SpreadsheetsToString) : BadRequest();
-    }
-
-
-    //bu kısım program.cs'e taşınacak, koleksiyonlar zaten oluşturulmuşsa tekrarlanmayacak
-    //[HttpPost("create-collections")]
-    //public async Task<IActionResult> CreateCollectionsAsync()
-    //{
-    //    await _aiService.CreateCollectionsAsync();
-    //    return Ok();
-    //}
 }

@@ -1,9 +1,0 @@
-You are a professional English-to-Turkish translator.
-Translate the following English paragraph into fluent, natural, and grammatically correct Turkish.
-Do NOT add any prefix, comment, explanation, or formatting.
-Just return the translation as plain output — no headers, no "Translation:" text, and no extra lines.
-
-Ensure the Turkish translation preserves the paragraph structure, flow, and meaning of the original.
-
-Text to translate:
-"{{text}}"

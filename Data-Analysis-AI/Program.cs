@@ -1,4 +1,5 @@
 using OfficeOpenXml;
+using RaporAsistani.Data;
 using RaporAsistani.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +18,9 @@ builder.Services.AddHttpClient<EmbeddingService>(client =>
 
 builder.Services.AddScoped<QdrantService>();
 builder.Services.AddScoped<AIService>();
+builder.Services.AddScoped<PythonService>();
 
+builder.Services.AddSingleton<MongoDbService>();
 builder.Services.AddSingleton<PromptService>();
 
 builder.Services.AddCors(options =>

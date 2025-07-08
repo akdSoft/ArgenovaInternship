@@ -1,29 +1,27 @@
-﻿namespace RaporAsistani.Services;
+﻿using System.Text;
+
+namespace RaporAsistani.Services;
 
 public class PromptService
 {
     private readonly string _defaultPromptRoot;
     private readonly string _initialPromptRoot;
-    private readonly string _generateWeekIdentificationPrompt;
-    private readonly string _translateToEnglishPrompt;
-    private readonly string _translateToTurkishPrompt;
+    private readonly string _dailySummary;
 
     public PromptService(IWebHostEnvironment env)
     {
         _defaultPromptRoot = Path.Combine(env.ContentRootPath, "Prompts", "DefaultPromptRoot.txt");
         _initialPromptRoot = Path.Combine(env.ContentRootPath, "Prompts", "InitialPromptRoot.txt");
-        _generateWeekIdentificationPrompt = Path.Combine(env.ContentRootPath, "Prompts", "GetWeekSummaryPrompt.txt");
-        _translateToEnglishPrompt = Path.Combine(env.ContentRootPath, "Prompts", "TranslateToEnglishPrompt.txt");
-        _translateToTurkishPrompt = Path.Combine(env.ContentRootPath, "Prompts", "TranslateToTurkishPrompt.txt");
+        _dailySummary = Path.Combine(env.ContentRootPath, "Prompts", "DailySummary.txt");
     }
 
-    public string GetDefaultPromptRoot() => File.ReadAllText(_defaultPromptRoot);
+    public string GetDefaultPromptRoot() =>
+         File.ReadAllText(_defaultPromptRoot, Encoding.UTF8);
 
-    public string GetInitialPromptRoot() => File.ReadAllText(_initialPromptRoot);
+    public string GetInitialPromptRoot() =>
+        File.ReadAllText(_initialPromptRoot, Encoding.UTF8);
 
-    public string GetGetWeekSummaryPrompt() => File.ReadAllText(_generateWeekIdentificationPrompt);
+    public string GetGetWeekSummaryPrompt() =>
+        File.ReadAllText(_dailySummary, Encoding.UTF8);
 
-    public string GetTranslateToEnglishPrompt() => File.ReadAllText(_translateToEnglishPrompt);
-
-    public string GetTranslateToTurkishPrompt() => File.ReadAllText(_translateToTurkishPrompt);
 }

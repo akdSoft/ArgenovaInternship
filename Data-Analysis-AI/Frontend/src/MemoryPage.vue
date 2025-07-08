@@ -172,7 +172,7 @@ onMounted(async () => {
   align-items: center;
   border-radius: 0px;
   gap: 10px;
-  color: black;
+  color: white;
   background-color: transparent;
   pointer-events: none;
   .HomeButton-img {
@@ -244,7 +244,7 @@ onMounted(async () => {
   justify-content: center;
   align-items: center;
   border-radius: 0;
-  background-color: transparent;
+  background-color: black;
   outline: none;
 }
 </style>

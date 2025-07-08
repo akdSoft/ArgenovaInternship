@@ -1,5 +1,5 @@
 ﻿using OfficeOpenXml;
-using RaporAsistani.Helpers;
+using RaporAsistani.Data;
 using RaporAsistani.Models;
 
 namespace RaporAsistani.Services;
@@ -8,97 +8,92 @@ public class AIService
 {
     private readonly LlamaService _llamaService;
     private readonly QdrantService _qdrantService;
+    private readonly PythonService _pythonService;
+    private readonly MongoDbService _mongoService;
 
-    public AIService(LlamaService llamaService, QdrantService qdrantService)
+    public AIService(LlamaService llamaService, QdrantService qdrantService, PythonService pythonService, MongoDbService mongoService)
     {
         _llamaService = llamaService;
         _qdrantService = qdrantService;
+        _pythonService = pythonService;
+        _mongoService = mongoService;
     }
 
-    public async Task<bool> UploadFilesAsync(List<IFormFile> excelFile)
+    public async Task<MemoryItemMongo?> AddNewDayAsync(IFormFile excelFile)
     {
-        string result = "[\n";
+        string excelDosyaYolu = "Resources/ExcelFiles/RAPOR2025.xlsx";
+        var saved = await SaveToExcelFileAsync(excelFile, excelDosyaYolu);
+        if (saved == false) return null;
 
-        foreach (var file in excelFile)
+        var lastDay = await _pythonService.GetLastDay();
+        var lastDateResponse = await _pythonService.GetFirstAndLastDate();
+        string lastDate = lastDateResponse.result.Substring(11);
+
+        var memoryItem = await _llamaService.SummarizeDayAsync(lastDate, lastDay);
+
+        await _qdrantService.SaveMemoryItemAsync(memoryItem);
+        return memoryItem;
+    }
+
+    public async Task<bool> SaveToExcelFileAsync(IFormFile excelFile, string dosyaYolu)
+    {
+        using (var package = new ExcelPackage(new FileInfo(dosyaYolu)))
         {
-            result += "{\n";
+            var worksheet = package.Workbook.Worksheets[0];
 
             var extensions = new[] { ".xlsx", ".xls", ".csv" };
-            if (!extensions.Contains(Path.GetExtension(file.FileName).ToLower()))
+            if (!extensions.Contains(Path.GetExtension(excelFile.FileName).ToLower()))
             {
                 return false;
             }
 
             MemoryStream stream = new MemoryStream();
-            await file.CopyToAsync(stream);
-            using var package = new ExcelPackage(stream);
-            InMemoryStorage.UploadedFiles["latest"] = stream.ToArray();
+            await excelFile.CopyToAsync(stream);
+            using var package1 = new ExcelPackage(stream);
 
 
-                var sheet = package.Workbook.Worksheets[0];
+            var sheet = package1.Workbook.Worksheets[0];
             int rowCount = sheet.Dimension.Rows;
             int columnCount = sheet.Dimension.Columns;
 
+            int endRow = worksheet.Dimension.End.Row;
 
-            for (int row = 1; row <= rowCount; row++)
+            for (int row = 2; row <= rowCount; row++)
             {
                 for (int column = 1; column <= columnCount; column++)
                 {
-                    result += sheet.Cells[row, column].Text;
-                    result += " | ";
-
+                    worksheet.Cells[endRow + row - 1, column].Value = sheet.Cells[row, column].Value;
                 }
-                result += "\n";
             }
-            result += "},\n";
+            await package.SaveAsync();
         }
-        result = result.Remove(result.Length - 1);
-        result = result.Remove(result.Length - 1);
-        result += "\n]";
-
-        result = result.Replace("Personel Adı", "Employee Name");
-        result = result.Replace("Giriş Tarihi", "Entry Date");
-        result = result.Replace("Çıkış Tarihi", "Exit Date");
-        result = result.Replace("Giriş Saati", "Entry Time");
-        result = result.Replace("Çıkış Saati", "Exit Time");
-        result = result.Replace("Çalışma Süresi", "Working Duration");
-
-        InMemoryStorage.SpreadsheetsToString = result;
-
         return true;
     }
 
-    public async Task<MessagePair?> AskAiAsync(string basePrompt, long conversationId, string aimodel)
+
+    public async Task<dynamic> AskAINewAsync(QueryDto dto)
     {
-        var tablesString = InMemoryStorage.SpreadsheetsToString;
+        var days = await _pythonService.GetDataByDates(dto.SelectedDays);
+        var daysWithSummaries = await _qdrantService.EnhanceSelectedDaysWithSummariesAsync(days, dto.SelectedDays);
 
-        string weekSummary = await _llamaService.GetWeekSummaryAsync(tablesString);
+        string enhancedPrompt = await _qdrantService.EnhancePromptWithVectorSearch(dto.Prompt, daysWithSummaries);
 
-        string englishBasePrompt = await _llamaService.TranslateToEnglishAsync(basePrompt);
+        var messagePair = await _llamaService.GetResponseNewAsync(dto, enhancedPrompt);
 
-        var enhancedPrompt = await _qdrantService.EnhancePromptWithRelatedPointsAsync(englishBasePrompt, weekSummary, tablesString);
-
-        var (memoryItem, messagePair) = await _llamaService.GetResponseAsync(basePrompt, enhancedPrompt, conversationId, aimodel, weekSummary);
-
-        await _qdrantService.UpdateMemoryAndChatAsync(memoryItem, conversationId);
+        await _mongoService.AddMessagePair(messagePair);
 
         return messagePair;
     }
 
+    public async Task<Conversation> CreateConversationAsync() => await _mongoService.CreateConversationAsync();
 
-    public async Task<Conversation> CreateConversationAsync() => await _qdrantService.CreateConversationAsync();
+    public async Task DeleteConversation(string conversationId) => await _mongoService.DeleteConversationAsync(conversationId);
 
-    public async Task DeleteConversation(long conversationId) => await _qdrantService.DeleteConversationAsync(conversationId);
+    public async Task<List<Conversation>> GetConversationsAsync() => await _mongoService.GetConversationsAsync();
 
-    public async Task<List<Conversation>> GetConversationsAsync() => await _qdrantService.GetConversationsAsync();
+    public async Task<List<MessagePairMongo>> GetMessagePairsAsync(string conversationId) => await _mongoService.GetMessagePairsAsync(conversationId);
 
-    public async Task<List<MessagePair>> GetMessagePairsAsync(long conversationId) => await _qdrantService.GetMessagePairsAsync(conversationId);
-
-    public async Task DeleteMemoryItemAsync(long memoryItemId) => await _qdrantService.DeleteMemoryItem(memoryItemId);
+    //public async Task DeleteMemoryItemAsync(long memoryItemId) => await _qdrantService.DeleteMemoryItem(memoryItemId);
 
     public async Task<List<MemoryItem>> GetMemoryItemsAsync() => await _qdrantService.GetMemoryItemsAsync();
-
-
-    public async Task CreateCollectionsAsync() => await _qdrantService.CreateCollectionsAsync();
-
 }
