@@ -1,0 +1,6 @@
+Data-Analysis-AI/frontend_flutter/web/* linguist-vendored
+Data-Analysis-AI/frontend_flutter/windows/* linguist-vendored
+Data-Analysis-AI/frontend_flutter/macos/* linguist-vendored
+Data-Analysis-AI/frontend_flutter/ios/* linguist-vendored
+Data-Analysis-AI/frontend_flutter/linux/* linguist-vendored
+Data-Analysis-AI/frontend_flutter/*.g.dart linguist-generated
