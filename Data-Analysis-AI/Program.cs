@@ -25,11 +25,10 @@ builder.Services.AddSingleton<PromptService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", builder =>
-        builder.WithOrigins("http://localhost:5173")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials());
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin() 
+              .AllowAnyHeader()
+              .AllowAnyMethod());
 });
 
 
@@ -37,7 +36,7 @@ builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-app.UseCors("AllowFrontend");
+app.UseCors("AllowAll");
 
 app.UseSwagger();
 app.UseSwaggerUI();
