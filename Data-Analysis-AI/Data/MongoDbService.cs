@@ -36,7 +36,8 @@ public class MongoDbService
         var conversation = new Conversation
         {
             Timestamp = DateTime.UtcNow.Millisecond,
-            ConversationName = new Random().Next(1, 100).ToString()
+            //ConversationName = new Random().Next(1, 100).ToString()
+            ConversationName = "Yeni Sohbet"
         };
 
         await conversationCollection.InsertOneAsync(conversation);
@@ -56,7 +57,7 @@ public class MongoDbService
 
     public async Task<List<MessagePairMongo>> GetMessagePairsAsync(string conversationId)
     {
-        return await messagePairCollection.Find(FilterDefinition<MessagePairMongo>.Empty).ToListAsync();
+        return await messagePairCollection.Find(Builders<MessagePairMongo>.Filter.Eq(m => m.ConversationId, conversationId)).ToListAsync();
     }
 
 }

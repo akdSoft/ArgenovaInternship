@@ -82,15 +82,6 @@ class AddnewdayState extends State<Addnewday> {
       backgroundColor: Color.fromARGB(255, 9, 6, 7),
       body: Stack(
         children: [
-          _drawerOpened
-              ? Positioned(
-                  top: 0,
-                  bottom: 0,
-                  right: 0,
-                  left: 0,
-                  child: Container(color: Color.fromARGB(255, 43, 43, 43)),
-                )
-              : Positioned(top: 0, child: SizedBox.shrink()),
           CustomBar(
             scaffoldKey: _scaffoldKey,
             drawerOpened: _drawerOpened,
@@ -151,6 +142,15 @@ class AddnewdayState extends State<Addnewday> {
                 ),
               ),
             ),
+          _drawerOpened
+              ? Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  left: 0,
+                  child: Container(color: Color.fromARGB(50, 255, 255, 255)),
+                )
+              : Positioned(top: 0, child: SizedBox.shrink()),
         ],
       ),
     );

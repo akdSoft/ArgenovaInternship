@@ -25,10 +25,17 @@ class ConversationsState extends State<Conversations> {
     return conversations;
   }
 
+  Future<void> _createConversation() async {
+    ConversationService().createConversation();
+    setState(() {
+      conversations = ConversationService().getConversations();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    _loadConversations();
+    conversations = ConversationService().getConversations();
   }
 
   @override
@@ -47,15 +54,6 @@ class ConversationsState extends State<Conversations> {
       backgroundColor: Color.fromARGB(255, 9, 6, 7),
       body: Stack(
         children: [
-          _drawerOpened
-              ? Positioned(
-                  top: 0,
-                  bottom: 0,
-                  right: 0,
-                  left: 0,
-                  child: Container(color: Color.fromARGB(255, 43, 43, 43)),
-                )
-              : Positioned(top: 0, child: SizedBox.shrink()),
           CustomBar(
             scaffoldKey: _scaffoldKey,
             drawerOpened: _drawerOpened,
@@ -69,7 +67,7 @@ class ConversationsState extends State<Conversations> {
             child: SizedBox(
               height: 200,
               child: FutureBuilder<List<ConversationModel>>(
-                future: _loadConversations(),
+                future: conversations,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(
@@ -127,7 +125,7 @@ class ConversationsState extends State<Conversations> {
                                 SizedBox(
                                   width: 220,
                                   child: Text(
-                                    conv.id,
+                                    conv.conversationName,
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 20,
@@ -172,7 +170,7 @@ class ConversationsState extends State<Conversations> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    showAboutDialog(context: context);
+                    _createConversation();
                   },
                   child: Center(
                     child: Container(
@@ -188,6 +186,15 @@ class ConversationsState extends State<Conversations> {
               ],
             ),
           ),
+          _drawerOpened
+              ? Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  left: 0,
+                  child: Container(color: Color.fromARGB(50, 255, 255, 255)),
+                )
+              : Positioned(top: 0, child: SizedBox.shrink()),
         ],
       ),
     );

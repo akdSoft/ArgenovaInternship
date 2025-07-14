@@ -4,11 +4,13 @@ import 'package:frontend_flutter/models/messagepair_model.dart';
 class CustomInput extends StatelessWidget {
   final TextEditingController controller;
   final Future<MessagepairModel?> Function() sendRequest;
+  final void Function() openCalendar;
 
   const CustomInput({
     super.key,
     required this.controller,
     required this.sendRequest,
+    required this.openCalendar,
   });
 
   @override
@@ -66,7 +68,7 @@ class CustomInput extends StatelessWidget {
               SizedBox(
                 height: 60,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: openCalendar,
                   child: Image.asset('assets/icons/calendar.png'),
                 ),
               ),

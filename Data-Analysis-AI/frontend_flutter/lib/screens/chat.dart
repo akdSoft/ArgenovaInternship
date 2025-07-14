@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend_flutter/models/messagepair_model.dart';
@@ -21,10 +20,61 @@ class Chat extends StatefulWidget {
 }
 
 class ChatState extends State<Chat> {
-  final TextEditingController _controller = TextEditingController();
+  List<DateTime?> selectedDates = [];
+
+  void _openCalendarDialog() async {
+    final results = await showDialog<List<DateTime?>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tarihleri Seç'),
+        content: SizedBox(
+          width: 300,
+          child: CalendarDatePicker2(
+            config: CalendarDatePicker2Config(
+              calendarType: CalendarDatePicker2Type.multi,
+              selectedDayHighlightColor: Colors.blueAccent,
+              firstDayOfWeek: 1,
+              weekdayLabels: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
+            ),
+            value: selectedDates,
+            onValueChanged: (dates) {
+              setState(() => selectedDates = dates);
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, selectedDates),
+            child: const Text('TAMAM'),
+          ),
+        ],
+      ),
+    );
+
+    if (results != null) {
+      setState(() {
+        selectedDates = results;
+      });
+    }
+  }
+
+  final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   Future<MessagepairModel?> _sendRequest() async {
-    final prompt = _controller.text;
+    setState(() {
+      isLoading = true;
+    });
+
+    final formattedDates = selectedDates
+        .whereType<DateTime>()
+        .map(
+          (e) =>
+              "${e.year}-${e.month.toString().padLeft(2, '0')}-${e.day.toString().padLeft(2, '0')}",
+        )
+        .toList();
+
+    final prompt = _textController.text;
 
     if (prompt.trim().isEmpty) return null;
 
@@ -32,7 +82,7 @@ class ChatState extends State<Chat> {
     final queryData = {
       "prompt": prompt,
       "conversationId": widget.conversationId,
-      "selectedDays": ["2025-07-01"],
+      "selectedDays": formattedDates,
     };
 
     try {
@@ -41,11 +91,23 @@ class ChatState extends State<Chat> {
         data: queryData,
       );
 
+      setState(() {
+        isLoading = false;
+        _textController.text = '';
+      });
+
       if (response.statusCode == 200) {
+        setState(() {
+          getMessagepairs();
+        });
         return MessagepairModel.fromJson(response.data);
       }
     } catch (e) {
       showAboutDialog(context: context, applicationName: "Hata oluştu: $e");
+      setState(() {
+        isLoading = false;
+        _textController.text = '';
+      });
     }
 
     return null;
@@ -81,9 +143,18 @@ class ChatState extends State<Chat> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _drawerOpened = false;
+  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
+    final formattedDates = selectedDates
+        .whereType<DateTime>()
+        .map(
+          (e) =>
+              "${e.year}-${e.month.toString().padLeft(2, '0')}-${e.day.toString().padLeft(2, '0')}",
+        )
+        .toList();
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: CustomDrawer(),
@@ -127,9 +198,18 @@ class ChatState extends State<Chat> {
                 }
 
                 final messagepairs = snapshot.data!;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.jumpTo(
+                      _scrollController.position.maxScrollExtent + 700,
+                    );
+                  }
+                });
+
                 return Align(
                   alignment: Alignment.center,
                   child: ListView.builder(
+                    controller: _scrollController,
                     padding: EdgeInsets.symmetric(vertical: 100),
                     itemCount: messagepairs.length,
                     itemBuilder: (context, index) {
@@ -199,12 +279,47 @@ class ChatState extends State<Chat> {
                                     borderRadius: BorderRadius.circular(28),
                                     color: Color(0xFF222021),
                                   ),
-                                  child: Text(
-                                    messagepairs[index].responseText,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.white,
-                                    ),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        messagepairs[index].responseText,
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Container(
+                                        margin: EdgeInsets.only(
+                                          top: 30,
+                                          bottom: 10,
+                                        ),
+                                        child: Divider(indent: 5, endIndent: 5),
+                                      ),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            margin: EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                            ),
+                                            child: Image.asset(
+                                              'assets/icons/copy.png',
+                                              width: 27,
+                                              height: 27,
+                                            ),
+                                          ),
+                                          Container(
+                                            margin: EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                            ),
+                                            child: Image.asset(
+                                              'assets/icons/refresh.png',
+                                              width: 26,
+                                              height: 26,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -218,7 +333,11 @@ class ChatState extends State<Chat> {
               },
             ),
           ),
-          CustomInput(controller: _controller, sendRequest: _sendRequest),
+          CustomInput(
+            controller: _textController,
+            sendRequest: _sendRequest,
+            openCalendar: _openCalendarDialog,
+          ),
           _drawerOpened
               ? Positioned(
                   top: 0,
@@ -226,6 +345,13 @@ class ChatState extends State<Chat> {
                   right: 0,
                   left: 0,
                   child: Container(color: Color.fromARGB(50, 255, 255, 255)),
+                )
+              : Positioned(top: 0, child: SizedBox.shrink()),
+          isLoading
+              ? Positioned(
+                  bottom: 180,
+                  right: 200,
+                  child: CircularProgressIndicator(color: Colors.amber),
                 )
               : Positioned(top: 0, child: SizedBox.shrink()),
         ],

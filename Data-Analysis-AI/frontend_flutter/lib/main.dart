@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend_flutter/screens/AddNewDay.dart';
-import 'package:frontend_flutter/screens/chat.dart';
 import 'package:frontend_flutter/screens/conversations.dart';
 import 'package:frontend_flutter/screens/memory.dart';
+import 'package:frontend_flutter/widgets/calendar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
         '/addnewday': (context) => const Addnewday(),
         '/conversations': (context) => const Conversations(),
         '/memory': (context) => const Memory(),
+        '/test': (context) => const DatePickerCalendar(),
         // '/chat': (context) => const Chat(),
       },
     );

@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 class CustomChatBar extends StatelessWidget {
@@ -29,7 +27,8 @@ class CustomChatBar extends StatelessWidget {
             : const Color.fromARGB(255, 0, 0, 0),
         alignment: Alignment.center,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.start,
+          spacing: 20,
           children: [
             SizedBox(
               height: 40,
@@ -41,9 +40,8 @@ class CustomChatBar extends StatelessWidget {
               ),
             ),
             Container(
-              padding: EdgeInsets.only(right: 30),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 spacing: 10,
                 children: [
@@ -65,13 +63,6 @@ class CustomChatBar extends StatelessWidget {
                     ],
                   ),
                 ],
-              ),
-            ),
-            SizedBox(
-              height: 50,
-              child: TextButton(
-                onPressed: () {},
-                child: Image.asset('assets/icons/three_dot.png'),
               ),
             ),
           ],

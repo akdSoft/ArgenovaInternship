@@ -20,4 +20,16 @@ class ConversationService {
 
     return conversationList;
   }
+
+  Future<void> createConversation() async {
+    const String url = 'http://10.0.2.2:5045/api/AI/create-conversation';
+
+    final dio = Dio();
+
+    final response = await dio.post(url);
+
+    if (response.statusCode != 200) {
+      return Future.error('bir sorun olustu');
+    }
+  }
 }
