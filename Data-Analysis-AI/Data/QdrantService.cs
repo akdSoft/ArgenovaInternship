@@ -87,6 +87,8 @@ public class QdrantService
         else
         {
             string enhancedPrompt = initialPromptRoot;
+            enhancedPrompt = enhancedPrompt.Replace("{{tables}}", daysWithSummaries);
+            enhancedPrompt = enhancedPrompt.Replace("{{baseprompt}}", prompt);
             //enhancedPrompt = enhancedPrompt.Replace("{{tables}}", tables);
             //enhancedPrompt = enhancedPrompt.Replace("{{baseprompt}}", englishBasePrompt);
             return enhancedPrompt;

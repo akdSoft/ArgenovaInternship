@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using RaporAsistani.Data;
 using RaporAsistani.Models;
 using RaporAsistani.Services;
 
@@ -11,12 +12,14 @@ public class AIController : ControllerBase
     private readonly AIService _aiService;
     private readonly PythonService _pythonService;
     private readonly PromptService _promptService;
+    private readonly MongoDbService _mongoService;
 
-    public AIController(AIService aiService, PythonService pythonService, PromptService promptService)
+    public AIController(AIService aiService, PythonService pythonService, PromptService promptService, MongoDbService mongoDbService)
     {
         _aiService = aiService;
         _pythonService = pythonService;
         _promptService = promptService;
+        _mongoService = mongoDbService;
     }
 
     [HttpPost("add-new-day")]
@@ -73,5 +76,12 @@ public class AIController : ControllerBase
     {
         var response = await _pythonService.GetFirstAndLastDate();
         return Ok(response);
+    }
+
+    [HttpGet("get-last-day")]
+    public async Task<IActionResult> GetLastDay()
+    {
+        var lastDay = await _mongoService.GetLastDayDataAsync();
+        return Ok(lastDay);
     }
 }
