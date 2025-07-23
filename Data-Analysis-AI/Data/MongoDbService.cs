@@ -38,7 +38,7 @@ public class MongoDbService
         await dayCollection.InsertOneAsync(day);
     }
 
-    public async Task<string> GetLastDayDataAsync()
+    public async Task<string> GetDataOfLastDayAsync()
     {
         var lastDay = await dayCollection
             .Find(FilterDefinition<Day>.Empty)
@@ -60,20 +60,56 @@ public class MongoDbService
         string format = $"{{0,-{tarihWidth}}}  {{1,-{isimWidth}}}  {{2,-{girisWidth}}}  {{3,-{cikisWidth}}}  {{4,-{sureWidth}}}";
 
         StringBuilder sb = new StringBuilder();
+        sb.AppendLine("{");
 
         sb.AppendLine(string.Format(format, headers[0], headers[1], headers[2], headers[3], headers[4]));
-
-
 
         foreach (var x in lastDay.Datas)
         {
             sb.AppendLine(string.Format(format, x.Isim, tarih, x.GirisSaati, x.CikisSaati, x.CalismaSuresi));
         }
 
+        sb.AppendLine("}");
         return sb.ToString();
     }
 
-    public async Task<string> GetLastDateAsync()
+    public async Task<string> GetDataOfTheDayAsync(string date)
+    {
+        var filter = Builders<Day>.Filter
+            .Eq(d => d.Tarih, date);
+
+        var lastDay = await dayCollection
+            .Find(filter)
+            .FirstOrDefaultAsync();
+
+        //Günü string tipinde tablo'ya çeviriyoruz
+        string[] headers = { "İsim", "Tarih", "Giriş Saati", "Çıkış Saati", "Çalışma Süresi" };
+
+        string tarih = lastDay.Tarih;
+
+        int isimWidth = Math.Max("Personel Adı".Length, lastDay.Datas.Max(v => v.Isim.Length));
+        int tarihWidth = Math.Max("Tarih".Length, tarih.Length);
+        int girisWidth = Math.Max("Giriş Saati".Length, lastDay.Datas.Max(v => v.GirisSaati.Length));
+        int cikisWidth = Math.Max("Çıkış Saati".Length, lastDay.Datas.Max(v => v.CikisSaati.Length));
+        int sureWidth = Math.Max("Çalışma Süresi".Length, lastDay.Datas.Max(v => v.CalismaSuresi.Length));
+
+        string format = $"{{0,-{tarihWidth}}}  {{1,-{isimWidth}}}  {{2,-{girisWidth}}}  {{3,-{cikisWidth}}}  {{4,-{sureWidth}}}";
+
+        StringBuilder sb = new StringBuilder();
+        //sb.AppendLine("{");
+
+        sb.AppendLine(string.Format(format, headers[0], headers[1], headers[2], headers[3], headers[4]));
+
+        foreach (var x in lastDay.Datas)
+        {
+            sb.AppendLine(string.Format(format, x.Isim, tarih, x.GirisSaati, x.CikisSaati, x.CalismaSuresi));
+        }
+
+        //sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public async Task<string> GetDateOfLastDayAsync()
     {
         var lastDay = await dayCollection
             .Find(FilterDefinition<Day>.Empty)
@@ -83,6 +119,26 @@ public class MongoDbService
 
         var lastDate = lastDay.Tarih;
         return lastDate;
+    }
+
+    public async Task<string> GetDataOfSelectedDaysAsync(List<string> selectedDays)
+    {
+        string result = "";
+
+        foreach (var date in selectedDays)
+        {
+            var dayData = await GetDataOfTheDayAsync(date);
+
+            result += "{\n";
+            result += $"\"Tarih\": \"{date}\",\n";
+            result += "\"Veriler\": [\n";
+            result += dayData;
+            result += "],\n";
+            result += $"\"Günün Özeti\": {date},\n";
+            result += "},\n\n";
+        }
+        result = result[..^3];
+        return result;
     }
 
     public async Task<Conversation> AddConversationAsync()

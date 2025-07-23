@@ -10,14 +10,12 @@ namespace RaporAsistani.Controllers;
 public class AIController : ControllerBase
 {
     private readonly AIService _aiService;
-    private readonly PythonService _pythonService;
     private readonly PromptService _promptService;
     private readonly MongoDbService _mongoService;
 
-    public AIController(AIService aiService, PythonService pythonService, PromptService promptService, MongoDbService mongoDbService)
+    public AIController(AIService aiService, PromptService promptService, MongoDbService mongoDbService)
     {
         _aiService = aiService;
-        _pythonService = pythonService;
         _promptService = promptService;
         _mongoService = mongoDbService;
     }
@@ -69,19 +67,5 @@ public class AIController : ControllerBase
     {
         var memoryItems = await _aiService.GetMemoryItemsAsync();
         return Ok(memoryItems);
-    }
-
-    [HttpGet("first-and-last-day")]
-    public async Task<IActionResult> GetFirstAndLastDate()
-    {
-        var response = await _pythonService.GetFirstAndLastDate();
-        return Ok(response);
-    }
-
-    [HttpGet("get-last-day")]
-    public async Task<IActionResult> GetLastDay()
-    {
-        var lastDay = await _mongoService.GetLastDayDataAsync();
-        return Ok(lastDay);
     }
 }

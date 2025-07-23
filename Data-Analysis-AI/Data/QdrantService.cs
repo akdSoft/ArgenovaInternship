@@ -28,13 +28,13 @@ public class QdrantService
     {
         string enhancedSelectedDays = daysTable;
 
-        foreach(var day in selectedDays)
+        foreach (var day in selectedDays)
         {
             var result = await _qdrantClient.ScrollAsync(
             collectionName: "Memory",
             filter: MatchKeyword("date", day),
             limit: 1,
-            payloadSelector: true 
+            payloadSelector: true
             );
 
 
@@ -74,7 +74,7 @@ public class QdrantService
                 JObject dateJson = JObject.Parse(element.Payload["date"].ToString());
                 string date = dateJson["stringValue"]?.ToString() ?? string.Empty;
 
-                context_days += "\"Summary of the day dated " + date + "\": \"" + summary + "\",\n";
+                context_days += "\"" + date + " tarihli günün özeti" + "\": \"" + summary + "\",\n";
             }
             context_days += "}";
 
